@@ -1,0 +1,75 @@
+This is my first attempt at a volatility plugin, a USN journal record parser.
+
+To use it copy the usnparser.py to your volatility /plugins folder, at which point volatility
+should see it and be able to use it.
+
+Invocation example:
+
+$ vol.py --profile Win7SP1x64 -f Windows7x64-ff5e53fe.vmem usnparser --output=csv
+Volatility Foundation Volatility Framework 2.3.1
+timestamp,MFTEntry,MFTEntryUSN,Parent,ParentUSN,usn#,"Filename",Reason,Attributes
+2014-01-26 09:01:19.079,0x5056L,0x1L,0x7beL,0x1L,0x10f35c0L,"ngen_service.log",EXTEND & CLOSE,ARCHIVE
+2014-01-26 09:01:19.079,0x7d8L,0x86L,0x7beL,0x1L,0x10f3620L,"ngen_service.lock",CREATE & DELETE & CLOSE,ARCHIVE
+2014-01-26 09:01:19.142,0x7d8L,0x89L,0x28eL,0x1L,0x10f39d8L,"GACLock.dat",CREATE,ARCHIVE & TEMPORARY
+2014-01-26 09:01:19.142,0x7d8L,0x89L,0x28eL,0x1L,0x10f3a30L,"GACLock.dat",CREATE & DELETE & CLOSE,ARCHIVE & TEMPORARY
+....
+
+And the current version's help output (flags specific to usnparser start at "-T, --timestamp"):
+
+$ vol.py usnparser -h
+Volatility Foundation Volatility Framework 2.3.1
+Usage: Volatility - A memory forensics analysis platform.
+
+Options:
+  -h, --help            list all available options and their default values.
+                        Default values may be set in the configuration file
+                        (/etc/volatilityrc)
+  --conf-file=/home/vol/.volatilityrc
+                        User based configuration file
+  -d, --debug           Debug volatility
+  --plugins=PLUGINS     Additional plugin directories to use (colon separated)
+  --info                Print information about all registered objects
+  --cache-directory=/home/vol/.cache/volatility
+                        Directory where cache files are stored
+  --cache               Use caching
+  --tz=TZ               Sets the timezone for displaying timestamps
+  -f FILENAME, --filename=FILENAME
+                        Filename to use when opening an image
+  --profile=WinXPSP2x86
+                        Name of the profile to load
+  -l LOCATION, --location=LOCATION
+                        A URN location from which to load an address space
+  -w, --write           Enable write support
+  --dtb=DTB             DTB Address
+  --output=text         Output in this format (format support is module
+                        specific)
+  --output-file=OUTPUT_FILE
+                        write output in this file
+  -v, --verbose         Verbose information
+  --shift=SHIFT         Mac KASLR shift address
+  -g KDBG, --kdbg=KDBG  Specify a specific KDBG virtual address
+  -k KPCR, --kpcr=KPCR  Specify a specific KPCR address
+  -T, --timestamp       Print timestamps instead of human-readable dates
+  -E, --unixtime        Use Unix Epoch 32-bit timestamps instead of native
+                        Windows 64-bit timestamps (loses subsecond accuracy).
+                        DOES NOT imply -T above.
+  -C, --checktime       Don't show entries with timestamps outside of unix
+                        epoch range to reduce corrupt entries
+  -S, --strict          Enable stricter checks on record integrity to further
+                        reduce corrupt entries
+  -O, --offset          Show the physical offset for each record
+  -R RECORDTYPE, --recordtype=RECORDTYPE
+                        Force version of USN record (2 or 3) to search for. In
+                        testing so far all OS's seem to use version 2 records
+                        in memory (even 8.1/2012r2 which purport to use R3).
+                        As such, default is R2.
+  -U, --unicode         Show unicode (utf-8) filenames. Be aware that due to
+                        corrupted records there will likely be strange
+                        characters in some places. Using -C and -S can help
+                        cut this down.
+
+---------------------------------
+Module USNParser
+---------------------------------
+Scans for and parses USN journal records
+
