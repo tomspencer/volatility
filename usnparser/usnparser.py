@@ -40,7 +40,7 @@ import volatility.utils as utils
 import volatility.debug as debug
 import re
 
-# USN change reason values & descriptions taken from MSDN
+# USN change reasons, source flags, and structures taken/adapted from MSDN
 # V2 - http://msdn.microsoft.com/en-us/library/windows/desktop/aa365722%28v=vs.85%29.aspx
 # V3 - http://msdn.microsoft.com/en-us/library/windows/desktop/hh802708%28v=vs.85%29.aspx
 #
@@ -73,8 +73,6 @@ CHANGE_REASON_FLAGS = {
 }
 
 # USN source info values & descriptions taken from MSDN
-# V2 - http://msdn.microsoft.com/en-us/library/windows/desktop/aa365722%28v=vs.85%29.aspx
-# V3 - http://msdn.microsoft.com/en-us/library/windows/desktop/hh802708%28v=vs.85%29.aspx
 SOURCE_INFO_FLAGS = {
     0x00000001:'DATA_MANAGEMENT',
     0x00000002:'AUXILIARY_DATA',
@@ -109,8 +107,6 @@ SHORT_FILE_ATTRIBUTE_FLAGS = {
 }
 
 # USN RECORD structures adapted from MSDN here
-# V2 - http://msdn.microsoft.com/en-us/library/windows/desktop/aa365722%28v=vs.85%29.aspx
-# V3 - http://msdn.microsoft.com/en-us/library/windows/desktop/hh802708%28v=vs.85%29.aspx
 USN_RECORD_TYPES = {
     'USNRecordV2': [None, {
         'RecordLength': [0x0, ['unsigned int']],   # Length of record padded to 8 bytes
@@ -262,7 +258,7 @@ class USNRecord(obj.CType):
     # found is a real and clean USN record. The needles are generic enough as to come up
     # fairly frequently just by chance, so we need to be somewhat thorough in validation
     # to ensure that this is a USN record and that its data can be trusted.
-    # This validation can be made even stricter by enabling the timecheck and strict flags
+    # This validation can be made even stricter by enabling the checktime and strict flags
     def is_valid(self, checktime = False, strict = False):
         """Validate this is a real USN record that is clean enough to be trusted"""
 
@@ -654,7 +650,7 @@ class USNParser(common.AbstractWindowsCommand):
 
         # format spec take from here: http://wiki.sleuthkit.org/index.php?title=Body_file
         # MD5|name|inode|mode_as_string|UID|GID|size|atime|mtime|ctime|crtime
-        # We don't have an analagous MD5, UID, GID, or size so there's are 0'd out
+        # We don't have an analagous MD5, UID, GID, or size so those are 0'd out
         fmtstr = '0|{0}|{1}|{2}|0|0|0|{3}|{3}|{3}|{3}\n'
 
         for usn_record in data:
