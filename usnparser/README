@@ -1,24 +1,21 @@
 This is my first attempt at a volatility plugin, a USN journal record parser.
 
-To use it copy the usnparser.py to your volatility /plugins folder, at which point volatility
-should see it and be able to use it.
+To use it copy the usnparser.py to your volatility /plugins folder, at which point volatility should see it and be able to use it.
 
-A note on USN record versions. The literature I can find seems to suggest that
-starting with Windows NT 6.2 families (8/2012) the OS should be using version 3
-records, and this plugin does support these records. That said, testing has
-shown that at least in memory, these OSs still seem to use v2 records. As such,
-unless otherwise specified with the -R3 flag, this plugin will always assume v2
-records.
+A note on USN record versions. The literature I can find seems to suggest that starting with Windows NT 6.2 families (8/2012) the OS should be using version 3 records, and this plugin does support these records. That said, testing has shown that at least in memory, these OSs still seem to use v2 records. As such, unless otherwise specified with the -R3 flag, this plugin will always assume v2 records.
 
 Invocation example:
 
-$ vol.py --profile Win7SP1x64 -f Windows7x64-ff5e53fe.vmem usnparser --output=csv
+$ vol.py --profile Win7SP1x64 -f Windows7SP1x64.vmem usnparser --output=csv -CS | head
 Volatility Foundation Volatility Framework 2.3.1
 timestamp,MFTEntry,MFTEntryUSN,Parent,ParentUSN,usn#,"Filename",Reason,Attributes
 2014-01-26 09:01:19.079,0x5056L,0x1L,0x7beL,0x1L,0x10f35c0L,"ngen_service.log",EXTEND & CLOSE,ARCHIVE
 2014-01-26 09:01:19.079,0x7d8L,0x86L,0x7beL,0x1L,0x10f3620L,"ngen_service.lock",CREATE & DELETE & CLOSE,ARCHIVE
 2014-01-26 09:01:19.142,0x7d8L,0x89L,0x28eL,0x1L,0x10f39d8L,"GACLock.dat",CREATE,ARCHIVE & TEMPORARY
 2014-01-26 09:01:19.142,0x7d8L,0x89L,0x28eL,0x1L,0x10f3a30L,"GACLock.dat",CREATE & DELETE & CLOSE,ARCHIVE & TEMPORARY
+2014-01-26 09:01:19.142,0x7d8L,0x8aL,0x28eL,0x1L,0x10f3a88L,"ngenlock.dat",CREATE,ARCHIVE & TEMPORARY
+2014-01-26 09:01:17.457,0x7d8L,0x23L,0x7beL,0x1L,0x10e5f60L,"ngen_service.lock",CREATE & DELETE & CLOSE,ARCHIVE
+2014-01-26 09:01:17.472,0x7f7L,0x1L,0x7f5L,0x1L,0x10e6000L,"a7efdcba40697d45a7b91e8be4d00d3c",DELETE & CLOSE,DIRECTORY
 ....
 
 And the current version's help output (flags specific to usnparser start at "-T, --timestamp"):
@@ -42,13 +39,12 @@ Options:
   --tz=TZ               Sets the timezone for displaying timestamps
   -f FILENAME, --filename=FILENAME
                         Filename to use when opening an image
-  --profile=WinXPSP2x86
-                        Name of the profile to load
-  -l LOCATION, --location=LOCATION
+  --profile=Win7SP1x64  Name of the profile to load
+  -l file:///home/vol/usn/Windows7SP1x64.vmem, --location=file:///home/vol/usn/Windows7SP1x64.vmem
                         A URN location from which to load an address space
   -w, --write           Enable write support
   --dtb=DTB             DTB Address
-  --output=text         Output in this format (format support is module
+  --output=csv          Output in this format (format support is module
                         specific)
   --output-file=OUTPUT_FILE
                         write output in this file
@@ -57,10 +53,10 @@ Options:
   -g KDBG, --kdbg=KDBG  Specify a specific KDBG virtual address
   -k KPCR, --kpcr=KPCR  Specify a specific KPCR address
   -T, --timestamp       Print timestamps instead of human-readable dates
-  -E, --unixtime        Use Unix Epoch 32-bit timestamps instead of native
+  -X, --unixtime        Use Unix Epoch 32-bit timestamps instead of native
                         Windows 64-bit timestamps (loses subsecond accuracy).
                         DOES NOT imply -T above.
-  -C, --checktime       Don't show entries with timestamps outside of unix
+  -C, --check           Don't show entries with timestamps outside of unix
                         epoch range to reduce corrupt entries
   -S, --strict          Enable stricter checks on record integrity to further
                         reduce corrupt entries

@@ -80,30 +80,45 @@ SOURCE_INFO_FLAGS = {
 }
 
 # File Attribute info values & descriptions taken from MSDN
-# http://msdn.microsoft.com/en-us/library/aa365535%28v=vs.85%29.aspx
+# http://msdn.microsoft.com/en-us/library/windows/desktop/gg258117%28v=vs.85%29.aspx
 FILE_ATTRIBUTE_FLAGS = {
     0x0001:'READONLY',
     0x0002:'HIDDEN',
     0x0004:'SYSTEM',
+    0x0010:'DIRECTORY',
     0x0020:'ARCHIVE',
+    0x0040:'DEVICE',
     0x0080:'NORMAL',
     0x0100:'TEMPORARY',
+    0x0200:'SPARSE_FILE',
+    0x0400:'REPARSE_POINT',
+    0x0800:'COMPRESSED',
     0x1000:'OFFLINE',
-    0x2000:'NOT_CONTENT_INDEXED'
+    0x2000:'NOT_CONTENT_INDEXED',
+    0x4000:'ENCRYPTED',
+    0x8000:'INTEGRITY_STREAM',
+    0x10000:'VIRTUAL',
+    0x20000:'NO_SCRUB_DATA'
 }
 
 # Short file flags from above for body format
 # lettering taken from mftscan by tecamac in issue 309:
 # http://code.google.com/p/volatility/issues/detail?id=309
 SHORT_FILE_ATTRIBUTE_FLAGS = {
-    0x0001:'r',
-    0x0002:'h',
-    0x0004:'s',
-    0x0020:'a',
-    0x0080:'n',
-    0x0100:'t',
-    0x1000:'o',
-    0x2000:'I'
+    0x0001:'r',  # read only
+    0x0002:'h',  # hidden
+    0x0004:'s',  # system
+    0x0020:'a',  # archive
+    0x0040:'d',  # device
+    0x0080:'n',  # normal
+    0x0100:'t',  # temporary
+    0x0200:'S',  # sparse file
+    0x0400:'r',  # reparse point
+    0x0800:'c',  # compressed
+    0x1000:'o',  # offline
+    0x2000:'I',  # not context indexed
+    0x4000:'e',  # encrypted
+    0x10000000:'D'  # directory - We use 0x10000000 here consistent with flag order, but adjust to 0x10 when checking
 }
 
 # USN RECORD structures adapted from MSDN here
@@ -156,7 +171,7 @@ OUTPUT_FIELDS = [
     ('usn#', '26'),
     ('Filename', '64'),
     ('Reason', '32'),
-    ('Attributes', '50'),
+    ('Attributes', '70'),
     # ('Source', '12'),  # Useless, always 0
     # ('SID', '40'),  # Useless, always 0
 ]
@@ -308,6 +323,14 @@ class USNRecord(obj.CType):
                 return False
 
             if not self.valid_flags(self.FileAttributes, FILE_ATTRIBUTE_FLAGS):
+                return False
+
+            # Normal flag (0x80) is only valid by itself
+            if (self.FileAttributes & 0x80) and (self.FileAttributes != 0x80):
+                return False
+
+            # Valid records must have at least one attribute flag (NORMAL if nothing else)
+            if self.FileAttributes == 0:
                 return False
 
         return True
@@ -511,13 +534,13 @@ class USNParser(common.AbstractWindowsCommand):
                           help = 'Print timestamps instead of human-readable dates',
                           action = 'store_true')
 
-        config.add_option('UNIXTIME', short_option = 'E', default = False,
+        config.add_option('UNIXTIME', short_option = 'X', default = False,
                           help = 'Use Unix Epoch 32-bit timestamps instead of native \
                                   Windows 64-bit timestamps (loses subsecond accuracy). \
                                   DOES NOT imply -T above.',
                           action = 'store_true')
 
-        config.add_option('CHECKTIME', short_option = 'C', default = False,
+        config.add_option('CHECK', short_option = 'C', default = False,
                           help = 'Don\'t show entries with timestamps outside of unix \
                                   epoch range to reduce corrupt entries',
                           action = 'store_true')
@@ -564,7 +587,7 @@ class USNParser(common.AbstractWindowsCommand):
 
             usn_record = obj.Object(record_type['name'], vm = address_space, offset = offset)
 
-            if usn_record.is_valid(checktime = self._config.CHECKTIME, strict = self._config.STRICT):
+            if usn_record.is_valid(checktime = self._config.CHECK, strict = self._config.STRICT):
                 yield usn_record
 
     # common rendering helper function to get the record data
@@ -664,9 +687,13 @@ class USNParser(common.AbstractWindowsCommand):
             # USN records do not set attributes for all of these, so we only
             # set the ones that are actually valid in USN records
             # adapted from "get_type_short" in mftparser
-            modestr = "{}{}{}{}-{}{}---{}{}---"
+            modestr = "{}{}{}{}{}{}{}{}{}{}{}{}{}{}-"
             modedata = []
             for i, j in sorted(SHORT_FILE_ATTRIBUTE_FLAGS.items()):
+
+                if i == 0x10000000:
+                    i = 0x10  # Directory flag is actually 0x10 for USN
+
                 if i & usn_record.FileAttributes:
                     modedata += [j]
                 else:
