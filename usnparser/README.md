@@ -1,11 +1,12 @@
-This is my first attempt at a volatility plugin, a USN journal record parser.
+# usnparser
 
-To use it copy the usnparser.py to your volatility /plugins folder, at which point volatility should see it and be able to use it.
+A USN journal record parser for volatility.
 
 A note on USN record versions. The literature I can find seems to suggest that starting with Windows NT 6.2 families (8/2012) the OS should be using version 3 records, and this plugin does support these records. That said, testing has shown that at least in memory, these OSs still seem to use v2 records. As such, unless otherwise specified with the -R3 flag, this plugin will always assume v2 records.
 
-Invocation example:
-
+## Installation & Usage
+To use it copy the usnparser.py to your volatility /plugins folder, at which point volatility should see it and be able to use it.
+```
 $ vol.py --profile Win7SP1x64 -f Windows7SP1x64.vmem usnparser --output=csv -CS | head
 Volatility Foundation Volatility Framework 2.3.1
 timestamp,MFTEntry,MFTEntryUSN,Parent,ParentUSN,usn#,"Filename",Reason,Attributes
@@ -75,4 +76,4 @@ Options:
 Module USNParser
 ---------------------------------
 Scans for and parses USN journal records
-
+```
